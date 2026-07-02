@@ -120,20 +120,24 @@
   /* ===== Orange particle-trail cursor (like reference image) ===== */
   var canvas=document.getElementById('cursor-canvas');
   if(canvas&&fine&&!reduced){
-    var ctx=canvas.getContext('2d'), W,H, parts=[], mouse={x:-100,y:-100}, moved=false;
+    var ctx=canvas.getContext('2d'), W,H, parts=[], mouse={x:-100,y:-100};
+    var lastSpawn={x:-999,y:-999};
     function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
     resize(); window.addEventListener('resize',resize);
     window.addEventListener('mousemove',function(e){
-      mouse.x=e.clientX; mouse.y=e.clientY; moved=true;
-      // spawn a couple particles per move
-      for(var k=0;k<2;k++){
-        parts.push({
-          x:mouse.x+(Math.random()*8-4), y:mouse.y+(Math.random()*8-4),
-          vx:(Math.random()*1.2-0.6), vy:(Math.random()*1.2-0.6),
-          r:1.5+Math.random()*3, life:1, dec:0.012+Math.random()*0.02
-        });
-      }
-      if(parts.length>240) parts.splice(0,parts.length-240);
+      mouse.x=e.clientX; mouse.y=e.clientY;
+      // only spawn once the cursor has actually travelled a bit — gives
+      // sparse, scattered dots instead of a dense continuous stream
+      var dx=mouse.x-lastSpawn.x, dy=mouse.y-lastSpawn.y;
+      if((dx*dx+dy*dy) < 14*14) return;
+      lastSpawn.x=mouse.x; lastSpawn.y=mouse.y;
+      if(Math.random() > 0.55) return; // skip some spawns for randomness/gaps
+      parts.push({
+        x:mouse.x+(Math.random()*20-10), y:mouse.y+(Math.random()*20-10),
+        vx:(Math.random()*0.5-0.25), vy:(Math.random()*0.5-0.25),
+        r:2+Math.random()*4.5, life:1, dec:0.01+Math.random()*0.012
+      });
+      if(parts.length>90) parts.splice(0,parts.length-90);
     });
     function tick(){
       ctx.clearRect(0,0,W,H);
@@ -141,7 +145,7 @@
         var p=parts[i]; p.x+=p.vx; p.y+=p.vy; p.life-=p.dec;
         if(p.life<=0){ parts.splice(i,1); continue; }
         ctx.beginPath();
-        ctx.fillStyle='rgba(232,101,26,'+ (p.life*0.85) +')';
+        ctx.fillStyle='rgba(232,101,26,'+ (p.life*0.6) +')';
         ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2); ctx.fill();
       }
       requestAnimationFrame(tick);
